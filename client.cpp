@@ -31,9 +31,29 @@ public:
     }
 };
 
+class Led{
+public:
+    string color;
+    int luminance;
+
+    Led(){
+        color = "off";
+        luminance = 0;
+    }
+
+    void print(){
+        if(color == "off") cout << color << endl;
+        else cout << color << "@" << luminance << endl;
+    }
+};
+
 int main()
 {
+    //Keep track of local state
     State localState;
+
+    Led led;
+
     // Websocket object
     ix::WebSocket webSocket;
 
@@ -68,6 +88,7 @@ int main()
     while (true)
     {
         localState.print();
+        led.print();
     }
 
     return 0;
