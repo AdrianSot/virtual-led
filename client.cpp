@@ -9,7 +9,7 @@ using namespace std;
 using namespace std::chrono;
 
 //Current time in milliseconds
-//#define getTime() duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+#define getTime() duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
 
 class State{
 public:
@@ -48,9 +48,9 @@ public:
     }
 
     void print(){
-        cout << "system" << ":" << system << ", playback" << ":" << playback << ", bluetooth" << ":" << bluetooth << endl;
-        cout << "volume" << ":" << volume << ", playbackPosition" << ":" << playbackPosition << endl;
-        cout << metadata << endl;
+        cout << "system" << ":" << system << ", playback" << ":" << playback << ", bluetooth" << ":" << bluetooth;
+        cout << ", volume" << ":" << volume << ", playbackPosition" << ":" << playbackPosition << endl;
+        //cout << metadata << endl;
         cout << "--------" << endl;
     }
 };
@@ -71,7 +71,45 @@ public:
     }
 
     void update(State &state){
-        
+        if(state.changed.count("playback") > 0){
+            if(state.playback == "paused") setColorAndLuminance("white",50);
+            if(state.playback == "inactive") setColorAndLuminance("off",0);
+            if(state.playback == "playing"){
+                if(state.bluetooth == "connected") setColorAndLuminance("blue",10);
+                else setColorAndLuminance("white",10);
+            }
+        }
+
+        if(state.changed.count("bluetooth") > 0){
+            if(state.bluetooth == "pairing") flash("blue", 100, 2);
+            else if(state.bluetooth == "connected" && state.playback == "playing"){
+                setColorAndLuminance("blue",10);
+            }
+        }
+
+        if(state.changed.count("volume") > 0){
+            setColorAndLuminance("white", state.volume);
+            fadeOff(3);
+        }
+
+        if(state.changed.count("system") > 0){
+            if(state.system == "error") setColorAndLuminance("red",100);
+            if(state.system == "updating") flash("yellow",100,1);
+            if(state.system == "booting") setColorAndLuminance("red",10); 
+        }
+    }
+
+    void setColorAndLuminance(string col, int lum){
+        color = col;
+        luminance = lum;
+    }
+
+    void fadeOff(int time){
+
+    }
+
+    void flash(string col, int lum, float hz){
+
     }
 };
 
@@ -98,7 +136,9 @@ int main()
             {
                 cout << "received message: " << msg->str << endl;
                 localState.updateState(json::parse(msg->str));
+                localState.print();
                 led.update(localState);
+                led.print();
             }
             else if (msg->type == ix::WebSocketMessageType::Open)
             {
