@@ -3,6 +3,7 @@
 #include <iostream>
 #include <unordered_set>
 #include <chrono>
+#include <queue>
 
 using json = nlohmann::json;
 using namespace std;
@@ -152,6 +153,8 @@ int main()
 
     Led led;
 
+    queue<json> newJsonStates;
+
     // Websocket object
     ix::WebSocket webSocket;
 
@@ -162,16 +165,17 @@ int main()
     cout << "Connecting to " << url << "..." << endl;
 
     // Callback when message or event (open, close, error) is received
-    webSocket.setOnMessageCallback([&localState, &led](const ix::WebSocketMessagePtr& msg)
+    webSocket.setOnMessageCallback([&newJsonStates](const ix::WebSocketMessagePtr& msg)
         {
             if (msg->type == ix::WebSocketMessageType::Message)
             {
                 cout << "received message: " << msg->str << endl;
-                localState.updateState(json::parse(msg->str));
-                localState.print();
-                led.update(localState);
-                led.print();
-                cout << "---------" << endl;
+                //localState.updateState(json::parse(msg->str));
+                newJsonStates.push(json::parse(msg->str));
+                //localState.print();
+                //led.update(localState);
+                //led.print();
+                //cout << "---------" << endl;
             }
             else if (msg->type == ix::WebSocketMessageType::Open)
             {
@@ -191,6 +195,14 @@ int main()
     {
         timeNow = getTime();
         if(timeNow - lastPrint > 250) {
+            while(!newJsonStates.empty()){
+                localState.updateState(newJsonStates.front());
+                newJsonStates.pop();
+                localState.print();
+                led.update(localState);
+                //led.print();
+                cout << "---------" << endl;
+            }
             led.fadingManager(localState.volume);
             led.flashingManager();
             led.print();
