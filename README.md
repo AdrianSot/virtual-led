@@ -6,6 +6,11 @@ The application uses the following libraries:
 - [IXWebSocket](https://github.com/machinezone/IXWebSocket)
 - [JSON](https://github.com/nlohmann/json)
 
+Use this for compilation:
+```
+g++ -std=c++11 client.cpp -lixwebsocket -lz -pthread -lssl -lcrypto
+```
+
 The controlled status led supports the following properties:
 
 -   Color: `red`, `yellow`, `blue`, `white`, `off`
