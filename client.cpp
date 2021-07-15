@@ -11,6 +11,9 @@ using json = nlohmann::json;
 using namespace std;
 using namespace std::chrono;
 
+//Activate to see the received messages and the current local state
+const bool PRINT_MESSAGES_AND_STATE = false;
+
 //Current time in milliseconds
 #define getTime() duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
 
@@ -39,7 +42,7 @@ int main()
         {
             if (msg->type == ix::WebSocketMessageType::Message)
             {
-                cout << "received message: " << msg->str << endl;
+                if(PRINT_MESSAGES_AND_STATE) cout << "received message: " << msg->str << endl;
                 newJsonStates.push(json::parse(msg->str));
             }
             else if (msg->type == ix::WebSocketMessageType::Open)
@@ -73,8 +76,7 @@ int main()
                 newJsonStates.pop();
                 led.update(localState);
 
-                cout << localState.data_string() << endl;
-                cout << "---------" << endl;
+                if(PRINT_MESSAGES_AND_STATE) cout << localState.data_string() << endl;
             }
 
             //Led flashing and fading is updated
