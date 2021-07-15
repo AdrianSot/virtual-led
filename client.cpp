@@ -48,8 +48,13 @@ public:
     string color;
     int luminance;
     bool isFading;
-    long long fadingEndTime;
+    unsigned long long fadingEndTime;
     int fadingDuration;
+
+    bool isFlashing;
+    float flashHz;
+    unsigned long long flashingStartTime;
+    string flashingColor;
 
     Led(){
         color = "off";
@@ -57,6 +62,10 @@ public:
         isFading = false;
         fadingDuration = 0;
         fadingEndTime = 0;
+        isFlashing = false;
+        flashHz = 0;
+        flashingStartTime = 0;
+        flashingColor = "off";
     }
 
     void print(){
@@ -67,16 +76,13 @@ public:
     void update(State &state){
         if(!isFading){
             if(state.playback == "paused") setColorAndLuminance("white",50);
-            if(state.playback == "inactive") setColorAndLuminance("off",0);
             if(state.playback == "playing"){
                 if(state.bluetooth == "connected") setColorAndLuminance("blue",10);
                 else setColorAndLuminance("white",10);
             }
+            if(state.playback == "inactive") setColorAndLuminance("off",0);
 
             if(state.bluetooth == "pairing") flash("blue", 100, 2);
-            else if(state.bluetooth == "connected" && state.playback == "playing"){
-                setColorAndLuminance("blue",10);
-            }
         }
 
         if(state.volumeChanged){
@@ -84,13 +90,15 @@ public:
             fadeOff(3);
         }
 
-        if(state.system == "error") setColorAndLuminance("red",100);
-        if(state.system == "updating") flash("yellow",100,1);
         if(state.system == "booting") setColorAndLuminance("red",10); 
+        if(state.system == "updating") flash("yellow",100,1);
+        if(state.system == "error") setColorAndLuminance("red",100);
     }
 
-    void setColorAndLuminance(string col, int lum, bool fading = false){
+    void setColorAndLuminance(string col, int lum, bool fading = false, bool flashing = false){
         if(!fading) isFading = false;
+        if(!flashing) isFlashing = false;
+        else flashingColor = col;
         //cout << "setting color : " << col << endl;
         color = col;
         luminance = lum;
@@ -118,7 +126,22 @@ public:
     }
 
     void flash(string col, int lum, float hz){
-        setColorAndLuminance(col,lum);
+        if(!isFlashing){
+            flashingStartTime = getTime();
+            isFlashing = true;
+        }
+        setColorAndLuminance(col,lum, false, true);
+        flashHz = hz;
+    }
+
+    void flashingManager(){
+        if(!isFlashing || flashHz <= 0) return;
+        unsigned long long currentTime = getTime();
+        unsigned long timeSinceFlashing = currentTime - flashingStartTime;
+        unsigned int flashingCycle = 1000 * (1.0/flashHz);
+        if(timeSinceFlashing % flashingCycle > flashingCycle / 2) color = flashingColor;
+        else color = "off";
+        
     }
 };
 
@@ -169,6 +192,7 @@ int main()
         timeNow = getTime();
         if(timeNow - lastPrint > 250) {
             led.fadingManager(localState.volume);
+            led.flashingManager();
             led.print();
             lastPrint = getTime();
         }
